@@ -104,9 +104,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    import traceback
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Server xatosi yuz berdi"},
+        content={"detail": "Server xatosi yuz berdi", "error_msg": str(exc), "trace": traceback.format_exc()},
     )
 
 

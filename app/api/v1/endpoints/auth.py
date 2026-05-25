@@ -81,3 +81,47 @@ def setup_superadmin(db: Session = Depends(get_db)):
     db.add(superadmin)
     db.commit()
     return {"status": "SuperAdmin muvaffaqiyatli yaratildi!"}
+
+@router.get("/reset-db", summary="Bazada hamma narsani tozalab qayta yaratish")
+def reset_database():
+    """Jadvallarni o'chirib qayta yaratadi. Agar xato bersa (masalan, eski DB tufayli), shuni ishlating."""
+    try:
+        from app.db.database import engine, Base
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        
+        # 8 ta default user yaratish
+        from app.db.database import SessionLocal
+        db = SessionLocal()
+        defaults = [
+            User(full_name="Super Admin", phone="+998900000001",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.SUPERADMIN, is_active=True),
+            User(full_name="Abdulloh Karimov", phone="+998900000002",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.DIRECTOR, is_active=True),
+            User(full_name="Nilufar Rashidova", phone="+998900000003",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.RECEPTION, is_active=True),
+            User(full_name="Sherzod Alimov", phone="+998900000004",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.TEACHER, subject=Subject.PROGRAMMING, is_active=True),
+            User(full_name="Gulnora Mirzayeva", phone="+998900000010",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.TEACHER, subject=Subject.ENGLISH, is_active=True),
+            User(full_name="Behruz Sobirov", phone="+998900000005",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.STUDENT, is_active=True),
+            User(full_name="Sardor Xolmatov", phone="+998900000006",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.STUDENT, is_active=True),
+            User(full_name="Malika Nazarova", phone="+998900000007",
+                 hashed_password=get_password_hash("admin123"),
+                 role=UserRole.STUDENT, is_active=True),
+        ]
+        db.add_all(defaults)
+        db.commit()
+        db.close()
+        return {"status": "Database tozalandi va 8 ta user yaratildi!"}
+    except Exception as e:
+        return {"error": str(e)}
