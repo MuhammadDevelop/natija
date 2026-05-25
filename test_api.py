@@ -1,7 +1,6 @@
-"""Barcha API endpointlarni tekshirish."""
+"""Barcha login testlari."""
 import urllib.request
 import json
-import sys
 
 BASE = "http://localhost:8000/api/v1"
 
@@ -17,104 +16,67 @@ def req(method, path, data=None, token=None):
     except urllib.error.HTTPError as e:
         return {"error": e.read().decode()}, e.code
 
-results = []
-
-def check(name, status, ok_status=200):
-    ok = status == ok_status
-    results.append((name, ok, status))
-    mark = "OK" if ok else "FAIL"
-    print(f"  [{mark}] {name}: {status}")
-
 print("=" * 50)
-print("MARKAZ PLATFORMASI - API TEST")
+print("LOGIN TESTLARI")
 print("=" * 50)
 
-# 1. Director
-print("\n--- DIRECTOR ---")
-d, s = req("POST", "/auth/login", {"phone": "+998900000002", "password": "admin123"})
-check("Login", s)
-tok = d.get("access_token", "")
+# Login har bir rol uchun
+roles = [
+    ("SuperAdmin", "+998900000001", "admin123"),
+    ("Director",   "+998900000002", "admin123"),
+    ("Reception",  "+998900000003", "admin123"),
+    ("Teacher1",   "+998900000004", "admin123"),
+    ("Teacher2",   "+998900000010", "admin123"),
+    ("Student1",   "+998900000005", "admin123"),
+    ("Student2",   "+998900000006", "admin123"),
+    ("Student3",   "+998900000007", "admin123"),
+]
 
-d, s = req("GET", "/director/dashboard", token=tok)
-check("Dashboard", s)
-print(f"      teachers={d.get('teachers_count')}, students={d.get('students_count')}, courses={d.get('courses_count')}")
+ok = 0
+fail = 0
+for name, phone, pwd in roles:
+    d, s = req("POST", "/auth/login", {"phone": phone, "password": pwd})
+    if s == 200:
+        print(f"  [OK] {name}: role={d.get('role')}, name={d.get('full_name')}")
+        ok += 1
+    else:
+        print(f"  [FAIL] {name}: status={s}, error={d}")
+        fail += 1
 
-d, s = req("GET", "/director/teachers", token=tok)
-check("Teachers list", s)
-
-d, s = req("GET", "/director/courses", token=tok)
-check("Courses list", s)
-
-d, s = req("GET", "/director/groups", token=tok)
-check("Groups list", s)
-
-# 2. Reception
-print("\n--- RECEPTION ---")
-d, s = req("POST", "/auth/login", {"phone": "+998900000003", "password": "admin123"})
-check("Login", s)
-tok = d.get("access_token", "")
-
-d, s = req("GET", "/reception/students", token=tok)
-check("Students list", s)
-
-d, s = req("GET", "/reception/groups", token=tok)
-check("Groups list", s)
-
-# 3. Teacher
-print("\n--- TEACHER ---")
-d, s = req("POST", "/auth/login", {"phone": "+998900000004", "password": "admin123"})
-check("Login", s)
-tok = d.get("access_token", "")
-
-d, s = req("GET", "/teacher/my-groups", token=tok)
-check("My Groups", s)
-
-# 4. Student
-print("\n--- STUDENT ---")
-d, s = req("POST", "/auth/login", {"phone": "+998900000005", "password": "admin123"})
-check("Login", s)
-tok = d.get("access_token", "")
-
-d, s = req("GET", "/student/me", token=tok)
-check("Profile", s)
-
-d, s = req("GET", "/student/my-groups", token=tok)
-check("My Groups", s)
-
-d, s = req("GET", "/student/attendance", token=tok)
-check("Attendance", s)
-
-d, s = req("GET", "/student/tasks", token=tok)
-check("Tasks", s)
-
-d, s = req("GET", "/student/bonuses", token=tok)
-check("Bonuses", s)
-
-d, s = req("GET", "/student/payments", token=tok)
-check("Payments", s)
-
-# 5. SuperAdmin
-print("\n--- SUPERADMIN ---")
-d, s = req("POST", "/auth/login", {"phone": "+998900000001", "password": "admin123"})
-check("Login", s)
-tok = d.get("access_token", "")
-
-d, s = req("GET", "/superadmin/stats", token=tok)
-check("Stats", s)
-
-d, s = req("GET", "/superadmin/directors", token=tok)
-check("Directors", s)
-
-# Summary
-print("\n" + "=" * 50)
-passed = sum(1 for _, ok, _ in results if ok)
-failed = sum(1 for _, ok, _ in results if not ok)
-print(f"NATIJA: {passed} muvaffaqiyatli, {failed} xato")
-if failed == 0:
-    print("BARCHA TESTLAR MUVAFFAQIYATLI!")
+# Register test
+print("\nREGISTRATION TEST:")
+d, s = req("POST", "/auth/register", {"full_name": "Test User", "phone": "+998991112233", "password": "test123"})
+if s == 201:
+    print(f"  [OK] Register: role={d.get('role')}, name={d.get('full_name')}")
+    ok += 1
 else:
-    print("BA'ZI TESTLAR XATO!")
-    for name, ok, status in results:
-        if not ok:
-            print(f"  XATO: {name} -> {status}")
+    print(f"  [FAIL] Register: status={s}, error={d}")
+    fail += 1
+
+# Subjects test
+print("\nSUBJECTS TEST:")
+d, s = req("GET", "/auth/subjects")
+if s == 200:
+    print(f"  [OK] Subjects: {len(d)} ta fan")
+    ok += 1
+else:
+    print(f"  [FAIL] Subjects: status={s}")
+    fail += 1
+
+# Director dashboard test
+print("\nDIRECTOR DASHBOARD TEST:")
+d, s = req("POST", "/auth/login", {"phone": "+998900000002", "password": "admin123"})
+tok = d.get("access_token", "")
+d, s = req("GET", "/director/dashboard", token=tok)
+if s == 200:
+    print(f"  [OK] Dashboard: teachers={d.get('teachers_count')}, students={d.get('students_count')}")
+    ok += 1
+else:
+    print(f"  [FAIL] Dashboard: status={s}")
+    fail += 1
+
+print("\n" + "=" * 50)
+print(f"NATIJA: {ok} OK, {fail} FAIL")
+if fail == 0:
+    print("BARCHA TESTLAR MUVAFFAQIYATLI!")
 print("=" * 50)

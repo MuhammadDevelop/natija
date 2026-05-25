@@ -1,6 +1,4 @@
-# pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Request, status
-# pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -23,50 +21,62 @@ app = FastAPI(
 O'quv markazi boshqaruv tizimining to'liq backend API interfeysi.
 
 ### Rollar:
-- **SuperAdmin** 👑 — Platforma boshqaruvi
-- **Director** 🏫 — Markaz boshqaruvi, o'qituvchilar, kurslar, moliya
-- **Reception** 📋 — Talabalar, guruhga yozish, to'lovlar
-- **Teacher** 📚 — Davomat, baholash, dars jadvali, materiallar
-- **Student** 🎓 — Profil, guruhlar, baholar, to'lovlar
+- **SuperAdmin** — Platforma boshqaruvi
+- **Director** — Markaz boshqaruvi
+- **Reception** — Talabalar, to'lovlar
+- **Teacher** — Davomat, baholash
+- **Student** — Profil, baholar
     """,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
 
-# ─── Startup: jadvallarni yaratish ───────────────────────────
+# ─── Startup: jadvallarni yaratish + auto-seed ───────────────
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    
-    # Avtomatik ravishda SuperAdmin foydalanuvchisini yaratib qo'yish (Render uchun ham)
+
+    # Auto-seed: DB bo'sh bo'lsa default foydalanuvchilarni yaratish
     from app.db.database import SessionLocal
-    from app.models.user import User, UserRole
+    from app.models.user import User, UserRole, Subject
     from app.core.security import get_password_hash
-    
+
     db = SessionLocal()
     try:
-        admin_phone = "+998889810206"
-        existing_admin = db.query(User).filter(User.phone == admin_phone).first()
-        if existing_admin:
-            existing_admin.role = UserRole.SUPERADMIN
-            existing_admin.hashed_password = get_password_hash("Muhammad02")
-            existing_admin.is_active = True
+        if not db.query(User).first():
+            defaults = [
+                User(full_name="Super Admin", phone="+998900000001",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.SUPERADMIN, is_active=True),
+                User(full_name="Abdulloh Karimov", phone="+998900000002",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.DIRECTOR, is_active=True),
+                User(full_name="Nilufar Rashidova", phone="+998900000003",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.RECEPTION, is_active=True),
+                User(full_name="Sherzod Alimov", phone="+998900000004",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.TEACHER, subject=Subject.PROGRAMMING, is_active=True),
+                User(full_name="Gulnora Mirzayeva", phone="+998900000010",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.TEACHER, subject=Subject.ENGLISH, is_active=True),
+                User(full_name="Behruz Sobirov", phone="+998900000005",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.STUDENT, is_active=True),
+                User(full_name="Sardor Xolmatov", phone="+998900000006",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.STUDENT, is_active=True),
+                User(full_name="Malika Nazarova", phone="+998900000007",
+                     hashed_password=get_password_hash("admin123"),
+                     role=UserRole.STUDENT, is_active=True),
+            ]
+            db.add_all(defaults)
             db.commit()
-            print(f"✅ Mavjud foydalanuvchi SuperAdmin qilib yangilandi: {admin_phone}")
-        else:
-            superadmin = User(
-                full_name="Muhammad Admin",
-                phone=admin_phone,
-                hashed_password=get_password_hash("Muhammad02"),
-                role=UserRole.SUPERADMIN,
-                is_active=True,
-            )
-            db.add(superadmin)
-            db.commit()
-            print(f"✅ Avtomatik SuperAdmin yaratildi: {admin_phone}")
+            print("Auto-seed: 8 ta foydalanuvchi yaratildi")
     except Exception as e:
-        print(f"❌ SuperAdmin yaratishda xato: {e}")
+        db.rollback()
+        print(f"Auto-seed xatosi: {e}")
     finally:
         db.close()
 
@@ -104,23 +114,14 @@ async def general_exception_handler(request: Request, exc: Exception):
 app.include_router(api_router, prefix="/api/v1")
 
 
-# ─── Frontend statik fayllar ─────────────────────────────────
-import os
-_frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "frontend")
-_frontend_dir = os.path.normpath(_frontend_dir)
-if os.path.isdir(_frontend_dir):
-    app.mount("/frontend", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
-
-
 # ─── Root endpoint ───────────────────────────────────────────
 @app.get("/", tags=["Root"], summary="API holat tekshiruvi")
 def root():
     return {
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "status": "ishlamoqda ✅",
+        "status": "ishlamoqda",
         "docs": "/docs",
-        "frontend": "/frontend/index.html",
     }
 
 
