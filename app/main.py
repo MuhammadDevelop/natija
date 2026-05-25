@@ -46,7 +46,13 @@ def on_startup():
     try:
         admin_phone = "+998889810206"
         existing_admin = db.query(User).filter(User.phone == admin_phone).first()
-        if not existing_admin:
+        if existing_admin:
+            existing_admin.role = UserRole.SUPERADMIN
+            existing_admin.hashed_password = get_password_hash("Muhammad02")
+            existing_admin.is_active = True
+            db.commit()
+            print(f"✅ Mavjud foydalanuvchi SuperAdmin qilib yangilandi: {admin_phone}")
+        else:
             superadmin = User(
                 full_name="Muhammad Admin",
                 phone=admin_phone,
