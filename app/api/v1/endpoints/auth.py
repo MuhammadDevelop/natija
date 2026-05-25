@@ -5,7 +5,7 @@ from app.db.database import get_db
 from app.schemas.user import Token, LoginRequest, RegisterRequest, SUBJECT_LABELS
 from app.services.user_service import auth_service, user_service
 from app.core.exceptions import CredentialsException, ConflictException
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, Subject
 from app.core.security import get_password_hash
 
 router = APIRouter()
