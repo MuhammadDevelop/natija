@@ -36,6 +36,31 @@ O'quv markazi boshqaruv tizimining to'liq backend API interfeysi.
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    
+    # Avtomatik ravishda SuperAdmin foydalanuvchisini yaratib qo'yish (Render uchun ham)
+    from app.db.database import SessionLocal
+    from app.models.user import User, UserRole
+    from app.core.security import get_password_hash
+    
+    db = SessionLocal()
+    try:
+        admin_phone = "+998889810206"
+        existing_admin = db.query(User).filter(User.phone == admin_phone).first()
+        if not existing_admin:
+            superadmin = User(
+                full_name="Muhammad Admin",
+                phone=admin_phone,
+                hashed_password=get_password_hash("Muhammad02"),
+                role=UserRole.SUPERADMIN,
+                is_active=True,
+            )
+            db.add(superadmin)
+            db.commit()
+            print(f"✅ Avtomatik SuperAdmin yaratildi: {admin_phone}")
+    except Exception as e:
+        print(f"❌ SuperAdmin yaratishda xato: {e}")
+    finally:
+        db.close()
 
 # ─── CORS Middleware ──────────────────────────────────────────
 app.add_middleware(
