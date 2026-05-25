@@ -39,36 +39,12 @@ O'quv markazi boshqaruv tizimining to'liq backend API interfeysi.
 def on_startup():
     Base.metadata.create_all(bind=engine)
     
-    # Avtomatik ravishda SuperAdmin foydalanuvchisini yaratib qo'yish (Render uchun ham)
-    from app.db.database import SessionLocal
-    from app.models.user import User, UserRole
-    from app.core.security import get_password_hash
-    
-    db = SessionLocal()
+    from seed import seed as run_seed
     try:
-        admin_phone = "+998889810206"
-        existing_admin = db.query(User).filter(User.phone == admin_phone).first()
-        if existing_admin:
-            existing_admin.role = UserRole.SUPERADMIN
-            existing_admin.hashed_password = get_password_hash("Muhammad02")
-            existing_admin.is_active = True
-            db.commit()
-            print(f"✅ Mavjud foydalanuvchi SuperAdmin qilib yangilandi: {admin_phone}")
-        else:
-            superadmin = User(
-                full_name="Muhammad Admin",
-                phone=admin_phone,
-                hashed_password=get_password_hash("Muhammad02"),
-                role=UserRole.SUPERADMIN,
-                is_active=True,
-            )
-            db.add(superadmin)
-            db.commit()
-            print(f"✅ Avtomatik SuperAdmin yaratildi: {admin_phone}")
+        run_seed()
+        print("✅ Seed funksiyasi muvaffaqiyatli ishga tushdi")
     except Exception as e:
-        print(f"❌ SuperAdmin yaratishda xato: {e}")
-    finally:
-        db.close()
+        print(f"❌ Seed funksiyasida xato: {e}")
 
 # ─── CORS Middleware ──────────────────────────────────────────
 app.add_middleware(

@@ -22,8 +22,7 @@ from datetime import datetime, timedelta
 
 
 def seed():
-    # Eski jadvallarni o'chirish va yangi yaratish
-    Base.metadata.drop_all(bind=engine)
+    # Eski jadvallarni o'chirmaymiz, faqat yo'qlarini yaratamiz
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
