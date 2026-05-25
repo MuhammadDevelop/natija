@@ -62,3 +62,22 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 def get_subjects():
     """Barcha fanlar ro'yxatini qaytaradi."""
     return [{"value": k, "label": v} for k, v in SUBJECT_LABELS.items()]
+
+
+@router.get("/setup-superadmin", summary="Vaqtincha: SuperAdmin yaratish")
+def setup_superadmin(db: Session = Depends(get_db)):
+    """Render uchun vaqtincha admin yaratish yo'li"""
+    existing = db.query(User).filter(User.role == UserRole.SUPERADMIN).first()
+    if existing:
+        return {"status": "SuperAdmin allaqachon mavjud"}
+    
+    superadmin = User(
+        full_name="Super Admin",
+        phone="+998901234567",
+        hashed_password=get_password_hash("Admin@2024"),
+        role=UserRole.SUPERADMIN,
+        is_active=True,
+    )
+    db.add(superadmin)
+    db.commit()
+    return {"status": "SuperAdmin muvaffaqiyatli yaratildi!"}
