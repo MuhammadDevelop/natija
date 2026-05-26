@@ -31,9 +31,9 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED, summary="O'quvchi ro'yxatdan o'tish")
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED, summary="Ro'yxatdan o'tish")
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    """O'quvchi o'zi ro'yxatdan o'tadi (student roli avtomatik)."""
+    """Foydalanuvchi o'zi ro'yxatdan o'tadi (student, director, teacher, reception)."""
     existing = db.query(User).filter(User.phone == data.phone.strip()).first()
     if existing:
         raise ConflictException("Bu telefon raqami allaqachon ro'yxatdan o'tgan")
@@ -42,7 +42,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         full_name=data.full_name.strip(),
         phone=data.phone.strip(),
         hashed_password=get_password_hash(data.password),
-        role=UserRole.STUDENT,
+        role=data.role or UserRole.STUDENT,
         is_active=True,
     )
     db.add(user)
@@ -94,29 +94,29 @@ def reset_database():
         from app.db.database import SessionLocal
         db = SessionLocal()
         defaults = [
-            User(full_name="Super Admin", phone="+998900000001",
-                 hashed_password=get_password_hash("admin123"),
+            User(full_name="Super Admin", phone="+998901001001",
+                 hashed_password=get_password_hash("admin2024"),
                  role=UserRole.SUPERADMIN, is_active=True),
-            User(full_name="Abdulloh Karimov", phone="+998900000002",
-                 hashed_password=get_password_hash("admin123"),
+            User(full_name="Abdulloh Karimov", phone="+998931050116",
+                 hashed_password=get_password_hash("bossjim"),
                  role=UserRole.DIRECTOR, is_active=True),
-            User(full_name="Nilufar Rashidova", phone="+998900000003",
-                 hashed_password=get_password_hash("admin123"),
+            User(full_name="Nilufar Rashidova", phone="+998942002002",
+                 hashed_password=get_password_hash("qabul123"),
                  role=UserRole.RECEPTION, is_active=True),
-            User(full_name="Sherzod Alimov", phone="+998900000004",
-                 hashed_password=get_password_hash("admin123"),
+            User(full_name="Sherzod Alimov", phone="+998953003003",
+                 hashed_password=get_password_hash("ustoz123"),
                  role=UserRole.TEACHER, subject=Subject.PROGRAMMING, is_active=True),
-            User(full_name="Gulnora Mirzayeva", phone="+998900000010",
-                 hashed_password=get_password_hash("admin123"),
+            User(full_name="Gulnora Mirzayeva", phone="+998953003004",
+                 hashed_password=get_password_hash("english1"),
                  role=UserRole.TEACHER, subject=Subject.ENGLISH, is_active=True),
             User(full_name="Behruz Sobirov", phone="+998900000005",
-                 hashed_password=get_password_hash("admin123"),
+                 hashed_password=get_password_hash("talaba1"),
                  role=UserRole.STUDENT, is_active=True),
             User(full_name="Sardor Xolmatov", phone="+998900000006",
-                 hashed_password=get_password_hash("admin123"),
+                 hashed_password=get_password_hash("talaba2"),
                  role=UserRole.STUDENT, is_active=True),
             User(full_name="Malika Nazarova", phone="+998900000007",
-                 hashed_password=get_password_hash("admin123"),
+                 hashed_password=get_password_hash("talaba3"),
                  role=UserRole.STUDENT, is_active=True),
         ]
         db.add_all(defaults)

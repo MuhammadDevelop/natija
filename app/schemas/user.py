@@ -31,11 +31,12 @@ class LoginRequest(BaseModel):
         return cleaned
 
 
-# ─── Register (O'quvchi o'zi ro'yxatdan o'tadi) ──────────────
+# ─── Register (Foydalanuvchi o'zi ro'yxatdan o'tadi) ──────────────
 class RegisterRequest(BaseModel):
     full_name: str
     phone: str
     password: str
+    role: Optional[UserRole] = UserRole.STUDENT
 
     @field_validator("phone")
     @classmethod
@@ -50,6 +51,14 @@ class RegisterRequest(BaseModel):
     def validate_password(cls, v: str) -> str:
         if len(v) < 6:
             raise ValueError("Parol kamida 6 ta belgidan iborat bo'lishi kerak")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v):
+        allowed = [UserRole.STUDENT, UserRole.DIRECTOR, UserRole.TEACHER, UserRole.RECEPTION]
+        if v not in allowed:
+            raise ValueError("Bu rol bilan ro'yxatdan o'tib bo'lmaydi")
         return v
 
 
