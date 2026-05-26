@@ -37,6 +37,7 @@ class RegisterRequest(BaseModel):
     phone: str
     password: str
     role: Optional[UserRole] = UserRole.STUDENT
+    subject: Optional[Subject] = None
 
     @field_validator("phone")
     @classmethod

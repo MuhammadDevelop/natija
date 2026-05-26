@@ -43,6 +43,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         phone=data.phone.strip(),
         hashed_password=get_password_hash(data.password),
         role=data.role or UserRole.STUDENT,
+        subject=data.subject,
         is_active=True,
     )
     db.add(user)
