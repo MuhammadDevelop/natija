@@ -83,9 +83,14 @@ def on_startup():
 # ─── CORS Middleware ──────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://natija-ro6w.onrender.com",
+        "*" # Ehtiyot bo'lish uchun, lekin frontend qayerdan ulansa shu domenni qo'shgan ma'qul
+    ],
+    allow_credentials=False, # Yoki True bo'lsa "*" ni olib tashlash kerak
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
