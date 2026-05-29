@@ -261,3 +261,44 @@ def my_payments(
         }
         for p in payments
     ]
+
+
+# ─── Guruh Ariza Yuborish (Soha va Daraja tanlash) ─────────────
+from app.schemas.group_application import GroupApplicationCreate, GroupApplicationResponse
+from app.services.group_application_service import group_application_service
+
+@router.post(
+    "/apply",
+    response_model=GroupApplicationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Guruhga qo'shilish uchun soha va daraja tanlash",
+)
+def apply_for_group(
+    app_in: GroupApplicationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    O'quvchi guruh tuzilishi uchun soha va daraja tanlab ariza jo'natadi.
+    """
+    require_student(current_user)
+    return group_application_service.create_application(
+        db, student_id=current_user.id, app_in=app_in
+    )
+
+
+@router.get(
+    "/my-applications",
+    response_model=List[GroupApplicationResponse],
+    summary="Mening soha va daraja tanlash arizalarim",
+)
+def get_my_applications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    O'quvchi o'zining barcha yuborgan arizalari ro'yxatini ko'radi.
+    """
+    require_student(current_user)
+    return group_application_service.get_applications(db, student_id=current_user.id)
+

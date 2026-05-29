@@ -277,3 +277,65 @@ def course_materials(
     """Kursga tegishli barcha materiallarni ko'rish."""
     verify_course_access(db, course_id, current_user)
     return teacher_service.get_materials_by_course(db, course_id)
+
+
+# ─── Guruh Tuzish (Soha va Daraja bo'yicha) ────────────────────
+from app.schemas.group_application import GroupApplicationResponse, GroupCreateFromApplications
+from app.services.group_application_service import group_application_service
+from app.models.group_application import ApplicationStatus
+from app.schemas.course import GroupResponse
+
+@router.get(
+    "/applications",
+    response_model=List[GroupApplicationResponse],
+    summary="O'qituvchi sohasiga mos keluvchi o'quvchi arizalari",
+)
+def get_teacher_applications(
+    level: Optional[str] = Query(None, description="Daraja bo'yicha filter"),
+    status: Optional[ApplicationStatus] = Query(ApplicationStatus.PENDING, description="Status bo'yicha filter"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_teacher_or_above),
+):
+    """
+    O'qituvchi faqat o'z faniga mos keluvchi o'quvchilar yuborgan arizalarni ko'ra oladi.
+    """
+    if current_user.role == UserRole.TEACHER and not current_user.subject:
+        return []  # Fani biriktirilmagan o'qituvchiga hech narsa ko'rsatilmaydi
+
+    subject_filter = current_user.subject if current_user.role == UserRole.TEACHER else None
+
+    return group_application_service.get_applications(
+        db,
+        subject=subject_filter,
+        level=level,
+        status=status
+    )
+
+
+@router.post(
+    "/applications/create-group",
+    response_model=GroupResponse,
+    summary="Tanlangan o'quvchi arizalaridan yangi guruh yaratish",
+)
+def teacher_create_group_from_applications(
+    group_in: GroupCreateFromApplications,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_teacher_or_above),
+):
+    """
+    O'qituvchi o'ziga tegishli kurs bo'yicha tanlangan arizalarni birlashtirib yangi guruh yaratadi.
+    """
+    # Kursga ruxsatni tekshirish
+    verify_course_access(db, group_in.course_id, current_user)
+
+    # Arizalarni tekshirish (o'qituvchining faniga to'g'ri kelishini tekshirish)
+    for app_id in group_in.application_ids:
+        app = group_application_service.get_application_by_id(db, app_id)
+        if current_user.role == UserRole.TEACHER and app.subject != current_user.subject:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ariza (id={app_id}) sizning faningizga mos kelmaydi"
+            )
+
+    return group_application_service.create_group_from_applications(db, group_in)
+

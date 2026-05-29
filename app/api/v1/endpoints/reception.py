@@ -250,3 +250,79 @@ def update_payment(
     current_user: User = Depends(get_reception_or_above),
 ):
     return finance_service.update_payment(db, payment_id, payment_in)
+
+
+# ─── Guruh Tuzish (Soha va Daraja bo'yicha) ────────────────────
+from app.schemas.group_application import GroupApplicationResponse, GroupCreateFromApplications
+from app.services.group_application_service import group_application_service
+from app.models.group_application import ApplicationStatus
+from app.schemas.course import GroupResponse
+from app.models.user import Subject
+
+@router.get(
+    "/applications",
+    response_model=List[GroupApplicationResponse],
+    summary="Barcha o'quvchi arizalari ro'yxati",
+)
+def list_student_applications(
+    subject: Optional[Subject] = Query(None, description="Soha bo'yicha filter"),
+    level: Optional[str] = Query(None, description="Daraja bo'yicha filter"),
+    status: Optional[ApplicationStatus] = Query(ApplicationStatus.PENDING, description="Status bo'yicha filter"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    """
+    Reception barcha talabalarning guruh tuzish arizalarini ko'radi va saralaydi.
+    """
+    return group_application_service.get_applications(
+        db,
+        subject=subject,
+        level=level,
+        status=status
+    )
+
+
+@router.post(
+    "/applications/create-group",
+    response_model=GroupResponse,
+    summary="Tanlangan o'quvchi arizalaridan yangi guruh yaratish",
+)
+def reception_create_group_from_applications(
+    group_in: GroupCreateFromApplications,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    """
+    Reception tanlangan arizalar asosida guruh yaratadi va arizalarni tasdiqlaydi.
+    """
+    return group_application_service.create_group_from_applications(db, group_in)
+
+
+# ─── Har Oyning 1-sanasida To'lovlarni Yangilash ──────────────
+from datetime import datetime
+
+@router.post(
+    "/payments/renew-monthly",
+    summary="Har oyning 1-sanasida faol o'quvchilar to'lovlarini yangilash",
+)
+def renew_monthly_payments(
+    month: Optional[str] = Query(
+        None, 
+        description="To'lov yangilanadigan oy (YYYY-MM formatda, masalan: 2026-06). Agar kiritilmasa, joriy oy olinadi."
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    """
+    Har oyning 1-sanasida barcha faol guruhlardagi o'quvchilar uchun to'lov yozuvlarini (PENDING) avtomatik/yarim-avtomatik yaratadi.
+    """
+    if not month:
+        month = datetime.utcnow().strftime("%Y-%m")
+    
+    result = finance_service.renew_monthly_payments(db, month)
+    return {
+        "status": "success",
+        "message": f"{month} oyi uchun to'lovlar yangilandi",
+        "details": result
+    }
+

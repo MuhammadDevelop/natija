@@ -55,3 +55,4 @@ class User(Base):
 
     # Relationships
     creator = relationship("User", remote_side=[id], foreign_keys=[created_by])
+    group_applications = relationship("GroupApplication", back_populates="student")

@@ -9,7 +9,7 @@ from app.api.v1.api_router import api_router
 from app.db.database import engine, Base
 
 # ─── Import barcha modellar (jadval yaratish uchun) ──────────
-from app.models import user, course, finance, task, attendance, bonus, lesson, material  # noqa
+from app.models import user, course, finance, task, attendance, bonus, lesson, material, group_application  # noqa
 
 # ─── FastAPI ilovasi ─────────────────────────────────────────
 app = FastAPI(

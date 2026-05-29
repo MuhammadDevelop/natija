@@ -190,6 +190,56 @@ class FinanceService:
             query = query.filter(Salary.month == month)
         return query.all()
 
+    def renew_monthly_payments(self, db: Session, month: str) -> dict:
+        """
+        Faol guruhlardagi barcha faol o'quvchilar uchun berilgan oyga (YYYY-MM formatda)
+        to'lov yozuvlarini avtomat yaratadi (agar allaqachon mavjud bo'lmasa).
+        """
+        active_memberships = db.query(GroupStudent).join(Group).filter(
+            GroupStudent.is_active == True,
+            Group.is_active == True
+        ).all()
+
+        created_count = 0
+        skipped_count = 0
+
+        for gs in active_memberships:
+            course = gs.group.course
+            if not course or not course.is_active:
+                continue
+
+            # Ushbu talaba va kurs uchun bu oyda to'lov bormi?
+            existing_payment = db.query(Payment).filter(
+                Payment.student_id == gs.student_id,
+                Payment.course_id == course.id,
+                Payment.month == month
+            ).first()
+
+            if not existing_payment:
+                # Yangi to'lov yozuvi (PENDING holatda)
+                payment = Payment(
+                    amount=course.price,
+                    month=month,
+                    status=PaymentStatus.PENDING,
+                    student_id=gs.student_id,
+                    course_id=course.id,
+                    notes=f"{gs.group.name} guruhi uchun oylik to'lov ({month})"
+                )
+                db.add(payment)
+                created_count += 1
+            else:
+                skipped_count += 1
+
+        if created_count > 0:
+            db.commit()
+
+        return {
+            "created": created_count,
+            "skipped": skipped_count,
+            "month": month
+        }
+
+
 
 course_service = CourseService()
 group_service = GroupService()
