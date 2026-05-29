@@ -38,7 +38,7 @@ def seed():
         # ─── 1. Foydalanuvchilar ─────────────────────────────────
         superadmin = User(
             full_name="Super Admin",
-            phone="+998900000001",
+            phone="+998931002010",
             hashed_password=get_password_hash("admin123"),
             role=UserRole.SUPERADMIN,
             is_active=True,
@@ -336,7 +336,7 @@ def seed():
         print()
         print("📋 Login ma'lumotlari (barcha parollar: admin123):")
         print("─" * 50)
-        print(f"  👑 SuperAdmin:  +998900000001")
+        print(f"  👑 SuperAdmin:  +998931002010")
         print(f"  🏫 Director:    +998900000002")
         print(f"  📋 Reception:   +998900000003")
         print(f"  📚 Teacher 1:   +998900000004")

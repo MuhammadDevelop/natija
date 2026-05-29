@@ -40,6 +40,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(SAEnum(UserRole), nullable=False, default=UserRole.STUDENT)
     subject = Column(SAEnum(Subject), nullable=True)  # O'qituvchi fani
+    subject_level = Column(String(50), nullable=True)  # Fan darajasi (masalan: html_css, ielts, beginner)
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
 

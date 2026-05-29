@@ -24,7 +24,7 @@ def create_superadmin():
 
         superadmin = User(
             full_name="Super Admin",
-            phone="+998901234567",       # O'zgartiring!
+            phone="+998931002010",
             hashed_password=get_password_hash("Admin@2024"),  # O'zgartiring!
             role=UserRole.SUPERADMIN,
             is_active=True,
