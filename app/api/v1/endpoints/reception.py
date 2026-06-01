@@ -7,10 +7,10 @@ from app.api.deps import get_reception_or_above
 from app.models.user import User, UserRole
 from app.models.course import Group, GroupStudent
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.schemas.course import GroupResponse
+from app.schemas.course import GroupResponse, CourseResponse, GroupCreate, CourseCreate
 from app.schemas.finance import PaymentCreate, PaymentUpdate, PaymentResponse
 from app.services.user_service import user_service
-from app.services.course_service import group_service, finance_service
+from app.services.course_service import group_service, finance_service, course_service
 from app.core.exceptions import PermissionDeniedException, NotFoundException
 
 router = APIRouter()
@@ -32,6 +32,23 @@ def list_students(
     return user_service.get_all(
         db, role=UserRole.STUDENT, skip=skip, limit=limit
     )
+
+@router.get(
+    "/teachers",
+    response_model=List[UserResponse],
+    summary="O'qituvchilar ro'yxati",
+)
+def list_teachers(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    """Reception guruhga biriktirishi uchun o'qituvchilar ro'yxati."""
+    return user_service.get_all(
+        db, role=UserRole.TEACHER, skip=skip, limit=limit
+    )
+
 
 
 @router.post(
@@ -198,6 +215,33 @@ def list_groups_with_availability(
             ),
         })
     return result
+
+
+@router.post("/groups", response_model=GroupResponse, status_code=status.HTTP_201_CREATED, summary="Guruh yaratish")
+def create_group(
+    group_in: GroupCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    return group_service.create(db, group_in)
+
+
+@router.get("/courses", response_model=List[CourseResponse], summary="Kurslar ro'yxati")
+def list_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    return course_service.get_all(db)
+
+
+@router.post("/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED, summary="Kurs yaratish")
+def create_course(
+    course_in: CourseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_reception_or_above),
+):
+    return course_service.create(db, course_in)
+
 
 
 # ─── To'lovlar boshqaruvi ─────────────────────────────────────
