@@ -50,6 +50,31 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
+    if user.role == UserRole.STUDENT and data.subject:
+        from app.models.course import Group, Course, GroupStudent
+        from app.models.group_application import GroupApplication
+        
+        # O'sha fanga tegishli bo'sh joyi bor birinchi faol guruhni topamiz
+        group = db.query(Group).join(Course).filter(
+            Course.subject == data.subject,
+            Group.is_active == True
+        ).first()
+
+        if group:
+            # Guruhga qo'shish
+            gs = GroupStudent(group_id=group.id, student_id=user.id)
+            db.add(gs)
+        else:
+            # Agar guruh bo'lmasa, ariza qoldiramiz (Reception guruh ochishi uchun)
+            app_record = GroupApplication(
+                student_id=user.id,
+                subject=data.subject,
+                level=data.subject_level or "Boshlang'ich"
+            )
+            db.add(app_record)
+        
+        db.commit()
+
     token = auth_service.create_token_for_user(user)
     return Token(
         access_token=token,
