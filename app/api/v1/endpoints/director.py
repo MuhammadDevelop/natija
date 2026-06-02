@@ -44,37 +44,46 @@ def get_dashboard(
 
 
 # ─── Teacher CRUD ─────────────────────────────────────────────
-@router.get("/teachers", response_model=List[UserResponse], summary="O'qituvchilar ro'yxati")
+@router.get("/teachers", response_model=List[UserResponse], summary="Hodimlar ro'yxati (O'qituvchi va Qabulxona)")
 def list_teachers(
+    role: Optional[UserRole] = Query(None, description="Faqat bitta rolni olish uchun filter"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_director_or_above),
 ):
-    return user_service.get_all(db, role=UserRole.TEACHER, skip=skip, limit=limit)
+    from sqlalchemy import or_
+    query = db.query(User).filter(
+        or_(User.role == UserRole.TEACHER, User.role == UserRole.RECEPTION)
+    )
+    if role:
+        query = query.filter(User.role == role)
+    return query.offset(skip).limit(limit).all()
 
 
-@router.post("/teachers", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="O'qituvchi qo'shish")
+@router.post("/teachers", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="Hodim qo'shish")
 def create_teacher(
     user_in: UserCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_director_or_above),
 ):
-    # Faqat TEACHER roli qo'shilishi mumkin
-    user_in.role = UserRole.TEACHER
+    from fastapi import HTTPException
+    # Faqat TEACHER yoki RECEPTION roli qo'shilishi mumkin
+    if user_in.role not in [UserRole.TEACHER, UserRole.RECEPTION]:
+        raise HTTPException(status_code=400, detail="Faqat o'qituvchi yoki qabulxona xodimini qo'shish mumkin")
     return user_service.create(db, user_in, created_by=current_user.id)
 
 
-@router.get("/teachers/{teacher_id}", response_model=UserDetail, summary="O'qituvchi ma'lumotlari")
+@router.get("/teachers/{teacher_id}", response_model=UserDetail, summary="Hodim ma'lumotlari")
 def get_teacher(
     teacher_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_director_or_above),
 ):
     teacher = user_service.get_by_id(db, teacher_id)
-    if teacher.role != UserRole.TEACHER:
+    if teacher.role not in [UserRole.TEACHER, UserRole.RECEPTION]:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="O'qituvchi topilmadi")
+        raise HTTPException(status_code=404, detail="Hodim topilmadi")
     return teacher
 
 

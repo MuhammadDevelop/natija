@@ -39,6 +39,19 @@ def verify_course_access(db: Session, course_id: int, current_user: User):
     return course
 
 
+from app.schemas.course import CourseResponse
+
+@router.get("/my-courses", response_model=List[CourseResponse], summary="O'qituvchining kurslari")
+def my_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_teacher_or_above),
+):
+    """O'qituvchiga biriktirilgan kurslar ro'yxati."""
+    courses = course_service.get_all(db)
+    if current_user.role == UserRole.TEACHER:
+        return [c for c in courses if c.teacher_id == current_user.id]
+    return courses
+
 # ─── Guruhlar (Groups) ────────────────────────────────────────
 @router.get("/my-groups", response_model=List[dict], summary="O'qituvchining faol guruhlari")
 def my_groups(
