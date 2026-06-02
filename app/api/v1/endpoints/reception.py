@@ -67,7 +67,34 @@ def register_student(
     Faqat STUDENT roli biriktirilishi mumkin.
     """
     user_in.role = UserRole.STUDENT
-    return user_service.create(db, user_in, created_by=current_user.id)
+    user = user_service.create(db, user_in, created_by=current_user.id)
+    
+    # Talabani avtomat guruhga yoki arizaga qo'shish
+    if user_in.subject:
+        from app.models.course import Group, Course, GroupStudent
+        from app.models.group_application import GroupApplication
+        from app.models.user import User as UserModel
+        
+        # O'sha fanga tegishli bo'sh joyi bor birinchi faol guruhni topamiz
+        group = db.query(Group).join(Course).join(UserModel, Course.teacher_id == UserModel.id).filter(
+            UserModel.subject == user_in.subject,
+            Group.is_active == True
+        ).first()
+
+        if group:
+            gs = GroupStudent(group_id=group.id, student_id=user.id)
+            db.add(gs)
+        else:
+            app_record = GroupApplication(
+                student_id=user.id,
+                subject=user_in.subject,
+                level=user_in.subject_level or "Boshlang'ich"
+            )
+            db.add(app_record)
+        
+        db.commit()
+
+    return user
 
 
 @router.get(
@@ -140,10 +167,11 @@ def enroll_student(
 
     # Guruh to'liq emasligini tekshirish
     student_count = group_service.get_student_count(db, group_id)
-    if student_count >= group.max_students:
+    max_students = group.max_students or 20
+    if student_count >= max_students:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Guruh to'liq ({student_count}/{group.max_students} o'rin)"
+            detail=f"Guruh to'liq ({student_count}/{max_students} o'rin)"
         )
 
     gs = group_service.add_student(db, group_id=group_id, student_id=student_id)
