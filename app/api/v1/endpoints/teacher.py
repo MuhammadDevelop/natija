@@ -8,6 +8,10 @@ from app.api.deps import get_teacher_or_above
 from app.models.user import User, UserRole
 from app.models.attendance import Attendance
 from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceBulkCreate
+from app.schemas.lesson import LessonCreate, LessonResponse
+from app.schemas.task import TaskCreate, TaskResponse, StudentTaskGrade, StudentTaskResponse
+from app.schemas.bonus import BonusCreate, BonusResponse
+from app.schemas.material import MaterialCreate, MaterialResponse
 
 from app.services.teacher_service import teacher_service
 from app.services.course_service import group_service, course_service
