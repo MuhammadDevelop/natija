@@ -7,7 +7,7 @@ from app.api.deps import get_reception_or_above
 from app.models.user import User, UserRole
 from app.models.course import Group, GroupStudent
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.schemas.course import GroupResponse, CourseResponse, GroupCreate, CourseCreate
+from app.schemas.course import GroupResponse, CourseResponse, GroupCreate, CourseCreate, ReceptionGroupCreate
 from app.schemas.finance import PaymentCreate, PaymentUpdate, PaymentResponse
 from app.services.user_service import user_service
 from app.services.course_service import group_service, finance_service, course_service
@@ -247,11 +247,43 @@ def list_groups_with_availability(
 
 @router.post("/groups", response_model=GroupResponse, status_code=status.HTTP_201_CREATED, summary="Guruh yaratish")
 def create_group(
-    group_in: GroupCreate,
+    group_in: ReceptionGroupCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_reception_or_above),
 ):
-    return group_service.create(db, group_in)
+    from app.models.course import Course
+    
+    # 1. O'qituvchiga tegishli kursni topish (yoki yaratish)
+    course = db.query(Course).filter(
+        Course.teacher_id == group_in.teacher_id,
+        Course.is_active == True
+    ).first()
+    
+    if not course:
+        course = Course(
+            name=f"{group_in.subject.capitalize()} kursi",
+            price=0,
+            teacher_id=group_in.teacher_id
+        )
+        db.add(course)
+        db.commit()
+        db.refresh(course)
+    
+    # 2. Schedule yaratish
+    days_map = {
+        "monday": "Du", "tuesday": "Se", "wednesday": "Ch",
+        "thursday": "Pa", "friday": "Ju", "saturday": "Sh", "sunday": "Ya"
+    }
+    days_str = "-".join([days_map.get(d, d) for d in group_in.days])
+    schedule_str = f"{days_str} {group_in.start_time}-{group_in.end_time}"
+    
+    new_group_in = GroupCreate(
+        name=group_in.name,
+        course_id=course.id,
+        schedule=schedule_str,
+        max_students=group_in.max_students
+    )
+    return group_service.create(db, new_group_in)
 
 
 @router.get("/courses", response_model=List[CourseResponse], summary="Kurslar ro'yxati")

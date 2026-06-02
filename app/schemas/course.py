@@ -46,6 +46,16 @@ class GroupBase(BaseModel):
     end_date: Optional[datetime] = None
 
 
+class ReceptionGroupCreate(BaseModel):
+    name: str
+    subject: str
+    teacher_id: int
+    days: List[str]
+    start_time: str
+    end_time: str
+    max_students: int = 20
+
+
 class GroupCreate(GroupBase):
     course_id: int
 
