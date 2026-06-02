@@ -38,6 +38,7 @@ class RegisterRequest(BaseModel):
     password: str
     role: Optional[UserRole] = UserRole.STUDENT
     subject: Optional[Subject] = None
+    subject_level: Optional[str] = None
 
     @field_validator("phone")
     @classmethod
@@ -71,6 +72,7 @@ class UserBase(BaseModel):
     is_active: bool = True
     notes: Optional[str] = None
     subject: Optional[Subject] = None
+    subject_level: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -91,6 +93,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     notes: Optional[str] = None
     subject: Optional[Subject] = None
+    subject_level: Optional[str] = None
 
 
 class UserResponse(UserBase):
