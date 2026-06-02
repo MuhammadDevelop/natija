@@ -7,11 +7,7 @@ from app.db.database import get_db
 from app.api.deps import get_teacher_or_above
 from app.models.user import User, UserRole
 from app.models.attendance import Attendance
-from app.schemas.attendance import AttendanceCreate, AttendanceResponse
-from app.schemas.lesson import LessonCreate, LessonResponse
-from app.schemas.task import TaskCreate, TaskResponse, StudentTaskGrade, StudentTaskResponse
-from app.schemas.bonus import BonusCreate, BonusResponse
-from app.schemas.material import MaterialCreate, MaterialResponse
+from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceBulkCreate
 
 from app.services.teacher_service import teacher_service
 from app.services.course_service import group_service, course_service
@@ -105,27 +101,43 @@ def group_students(
 
 
 # ─── Davomat (Attendance) ──────────────────────────────────────
-@router.post("/attendance", response_model=AttendanceResponse, status_code=status.HTTP_201_CREATED, summary="Davomat belgilash")
+@router.post("/attendance", status_code=status.HTTP_201_CREATED, summary="Guruh davomatini belgilash (Bulk)")
 def mark_attendance(
-    att_in: AttendanceCreate,
+    att_in: AttendanceBulkCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_teacher_or_above),
 ):
-    """Talaba uchun davomat yozuvini kiritish."""
+    """Guruhdagi barcha talabalar uchun birdaniga davomat yozuvlarini kiritish."""
     verify_group_access(db, att_in.group_id, current_user)
     
-    attendance = Attendance(
-        date=att_in.date,
-        status=att_in.status,
-        notes=att_in.notes,
-        student_id=att_in.student_id,
-        group_id=att_in.group_id,
-        marked_by=current_user.id,
-    )
-    db.add(attendance)
+    count = 0
+    for record in att_in.records:
+        student_id = record.get("student_id")
+        status_val = record.get("status", "present")
+        
+        if student_id:
+            # Check if attendance already exists for this date and student
+            existing = db.query(Attendance).filter(
+                Attendance.student_id == student_id,
+                Attendance.group_id == att_in.group_id,
+                Attendance.date == att_in.date
+            ).first()
+            
+            if existing:
+                existing.status = status_val
+            else:
+                attendance = Attendance(
+                    date=att_in.date,
+                    status=status_val,
+                    student_id=student_id,
+                    group_id=att_in.group_id,
+                    marked_by=current_user.id,
+                )
+                db.add(attendance)
+            count += 1
+            
     db.commit()
-    db.refresh(attendance)
-    return attendance
+    return {"detail": f"{count} ta davomat muvaffaqiyatli saqlandi"}
 
 
 @router.get("/attendance/group/{group_id}", response_model=List[AttendanceResponse], summary="Guruh davomat tarixi")
