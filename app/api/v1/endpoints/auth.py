@@ -53,10 +53,11 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     if user.role == UserRole.STUDENT and data.subject:
         from app.models.course import Group, Course, GroupStudent
         from app.models.group_application import GroupApplication
+        from app.models.user import User as UserModel
         
-        # O'sha fanga tegishli bo'sh joyi bor birinchi faol guruhni topamiz
-        group = db.query(Group).join(Course).filter(
-            Course.subject == data.subject,
+        # O'sha fanga tegishli bo'sh joyi bor birinchi faol guruhni topamiz (o'qituvchining fani orqali)
+        group = db.query(Group).join(Course).join(UserModel, Course.teacher_id == UserModel.id).filter(
+            UserModel.subject == data.subject,
             Group.is_active == True
         ).first()
 
