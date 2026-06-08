@@ -43,6 +43,7 @@ class User(Base):
     subject_level = Column(String(50), nullable=True)  # Fan darajasi (masalan: html_css, ielts, beginner)
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
+    face_encoding = Column(Text, nullable=True)  # JSON-encoded array of floats
 
     # Telegram
     telegram_id = Column(String(50), unique=True, nullable=True)

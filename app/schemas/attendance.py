@@ -46,3 +46,15 @@ class AttendanceSummary(BaseModel):
     late: int
     excused: int
     percentage: float
+
+
+class FaceVerificationRequest(BaseModel):
+    group_id: int
+    encoding: list[float]
+
+
+class FaceVerificationResponse(BaseModel):
+    matched: bool
+    student_id: Optional[int] = None
+    student_name: Optional[str] = None
+    attendance_id: Optional[int] = None
