@@ -36,6 +36,15 @@ O'quv markazi boshqaruv tizimining to'liq backend API interfeysi.
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    
+    # Render'dagi PostgreSQL ga yangi ustunni qo'shish (Auto-migration hack)
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            # PostgreSQL uchun
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS face_encoding TEXT;"))
+    except Exception:
+        pass
 
     # Auto-seed: DB bo'sh bo'lsa default foydalanuvchilarni yaratish
     from app.db.database import SessionLocal
