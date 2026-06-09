@@ -38,6 +38,8 @@ def register_face(
         raise HTTPException(status_code=404, detail="Talaba topilmadi")
 
     student.face_encoding = json.dumps(data.encoding)
+    if data.image_base64:
+        student.face_image = data.image_base64
     db.commit()
     return {"message": "Yuz ma'lumotlari muvaffaqiyatli saqlandi"}
 

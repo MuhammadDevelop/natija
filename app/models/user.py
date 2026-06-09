@@ -44,6 +44,7 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
     face_encoding = Column(Text, nullable=True)  # JSON-encoded array of floats
+    face_image = Column(Text, nullable=True)  # Base64 rasm
 
     # Telegram
     telegram_id = Column(String(50), unique=True, nullable=True)

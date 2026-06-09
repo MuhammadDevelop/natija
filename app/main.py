@@ -43,6 +43,7 @@ def on_startup():
         with engine.begin() as conn:
             # PostgreSQL uchun
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS face_encoding TEXT;"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS face_image TEXT;"))
     except Exception:
         pass
 

@@ -115,6 +115,7 @@ class UserDetail(UserResponse):
 
 class FaceRegistrationRequest(BaseModel):
     encoding: list[float]  # 128-d yoki 512-d array
+    image_base64: str      # Base64 rasm
 
 
 # ─── Fanlar ro'yxati ─────────────────────────────────────────
