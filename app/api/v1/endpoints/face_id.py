@@ -14,11 +14,11 @@ from app.schemas.attendance import FaceVerificationRequest, FaceVerificationResp
 
 router = APIRouter()
 
-def calculate_distance(enc1: List[float], enc2: List[float]) -> float:
-    """Euclidean distance between two encodings"""
+def calculate_squared_distance(enc1: List[float], enc2: List[float]) -> float:
+    """Squared Euclidean distance (much faster as it skips sqrt)"""
     if len(enc1) != len(enc2):
         return float('inf')
-    return math.sqrt(sum((a - b) ** 2 for a, b in zip(enc1, enc2)))
+    return sum((a - b) ** 2 for a, b in zip(enc1, enc2))
 
 @router.post("/register/{student_id}", summary="Talaba uchun Face ID ro'yxatdan o'tkazish")
 def register_face(
@@ -56,19 +56,23 @@ def verify_face(
     if current_user.role not in [UserRole.SUPERADMIN, UserRole.DIRECTOR, UserRole.RECEPTION, UserRole.TEACHER]:
         raise HTTPException(status_code=403, detail="Faqat xodimlar davomat qila oladi")
 
-    # Barcha talabalarning yuzlarini guruhga tegishliligi bo'yicha olish kerak. 
-    # Hozircha barcha talabalarni olib solishtiramiz. 
-    students = db.query(User).filter(User.role == UserRole.STUDENT, User.face_encoding.isnot(None)).all()
+    # Tezlik uchun faqatgina aynan shu guruhdagi (group_id) talabalarni bazadan olamiz.
+    from app.models.course import GroupStudent
+    students = db.query(User).join(GroupStudent, User.id == GroupStudent.student_id).filter(
+        GroupStudent.group_id == data.group_id,
+        User.face_encoding.isnot(None)
+    ).all()
     
     best_match = None
-    min_distance = 0.6  # Threshold (masofaning eng yuqori chegarasi)
+    # Original distance threshold is 0.6, so squared threshold is 0.36
+    min_squared_distance = 0.36 
     
     for student in students:
         try:
             saved_encoding = json.loads(student.face_encoding)
-            distance = calculate_distance(data.encoding, saved_encoding)
-            if distance < min_distance:
-                min_distance = distance
+            sq_distance = calculate_squared_distance(data.encoding, saved_encoding)
+            if sq_distance < min_squared_distance:
+                min_squared_distance = sq_distance
                 best_match = student
         except Exception:
             continue
