@@ -64,8 +64,9 @@ def verify_face(
     ).all()
     
     best_match = None
-    # Original distance threshold is 0.6, so squared threshold is 0.36
-    min_squared_distance = 0.36 
+    # Original distance threshold was 0.36 (0.6 euclidean).
+    # Osonroq va tezroq tanishi uchun chegarani 0.49 (0.7 euclidean) ga ko'taramiz
+    min_squared_distance = 0.49
     
     for student in students:
         try:
