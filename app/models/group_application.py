@@ -26,4 +26,4 @@ class GroupApplication(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    student = relationship("User", foreign_keys=[student_id], back_populates="group_applications")
+    student = relationship("User", foreign_keys=[student_id])

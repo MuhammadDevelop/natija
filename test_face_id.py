@@ -3,6 +3,7 @@ from app.main import app
 from app.db.database import get_db, SessionLocal
 from app.models.user import User, UserRole
 from app.models.attendance import Attendance
+from app.models.course import Course, Group, GroupStudent
 
 client = TestClient(app)
 
@@ -37,6 +38,21 @@ def test_face_id_endpoints():
         db.commit()
         db.refresh(student)
 
+    # 2.5 Guruh va Kurs yaratamiz
+    course = Course(name="Face ID Test Course", price=1000)
+    db.add(course)
+    db.commit()
+    db.refresh(course)
+
+    group = Group(name="Face ID Test Group", course_id=course.id)
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    gs = GroupStudent(group_id=group.id, student_id=student.id)
+    db.add(gs)
+    db.commit()
+
     # 3. Tokenni simulyatsiya qilish uchun TestClient dagi get_current_active_user ni override qilamiz
     from app.api import deps
     app.dependency_overrides[deps.get_current_active_user] = lambda: teacher
@@ -48,7 +64,7 @@ def test_face_id_endpoints():
     
     reg_response = client.post(
         f"/api/v1/face-id/register/{student.id}",
-        json={"encoding": mock_encoding}
+        json={"encoding": mock_encoding, "image_base64": "dummy_base64_string"}
     )
     
     print(f"REGISTER RESPONSE: {reg_response.status_code}")
@@ -59,7 +75,7 @@ def test_face_id_endpoints():
     # O'xshash encoding yuboramiz
     verify_response = client.post(
         "/api/v1/face-id/verify",
-        json={"group_id": 1, "encoding": mock_encoding}
+        json={"group_id": group.id, "encoding": mock_encoding}
     )
     
     print(f"VERIFY RESPONSE: {verify_response.status_code}")
@@ -71,7 +87,7 @@ def test_face_id_endpoints():
     wrong_encoding = [-0.9, -0.8, -0.7, -0.6] * 32
     verify_fail = client.post(
         "/api/v1/face-id/verify",
-        json={"group_id": 1, "encoding": wrong_encoding}
+        json={"group_id": group.id, "encoding": wrong_encoding}
     )
     
     print(f"VERIFY FAIL RESPONSE: {verify_fail.status_code}")
@@ -83,6 +99,9 @@ def test_face_id_endpoints():
     
     # O'chirib tashlaymiz
     db.query(Attendance).filter(Attendance.student_id == student.id).delete()
+    db.delete(gs)
+    db.delete(group)
+    db.delete(course)
     db.delete(student)
     db.delete(teacher)
     db.commit()
